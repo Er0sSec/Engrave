@@ -4,6 +4,6 @@ package forestlore
 // incompatible changes are made, this will
 // be incremented to signify a protocol
 // mismatch.
-var ProtocolVersion = "engrave-v0"
+var EnchantedVersion = "engrave-v0"
 
 var BuildVersion = "0.0.0-src"

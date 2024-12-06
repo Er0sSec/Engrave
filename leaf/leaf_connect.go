@@ -67,11 +67,11 @@ func (l *Leaf) castConnectionSpell(ctx context.Context) (connected bool, err err
 	ctx, cancelSpell := context.WithCancel(ctx)
 	defer cancelSpell()
 	magicalDialer := websocket.Dialer{
-		HandshakeTimeout: enchantments.EnvDuration("FOREST_WHISPER_TIMEOUT", 45*time.Second),
-		Subprotocols:     []string{forestlore.EnchantedProtocolVersion},
+		HandshakeTimeout: enchantments.WhisperTimespell("FOREST_WHISPER_TIMEOUT", 45*time.Second),
+		Subprotocols:     []string{forestlore.EnchantedVersion},
 		TLSClientConfig:  l.tlsConfig,
-		ReadBufferSize:   enchantments.EnvInt("FOREST_BUFFER_SIZE", 0),
-		WriteBufferSize:  enchantments.EnvInt("FOREST_BUFFER_SIZE", 0),
+		ReadBufferSize:   enchantments.WhisperEnchantedNumber("FOREST_BUFFER_SIZE", 0),
+		WriteBufferSize:  enchantments.WhisperEnchantedNumber("FOREST_BUFFER_SIZE", 0),
 		NetDialContext:   l.config.DialContext,
 	}
 	if p := l.proxyURL; p != nil {
@@ -102,7 +102,7 @@ func (l *Leaf) castConnectionSpell(ctx context.Context) (connected bool, err err
 	_, configerr, err := sshConn.SendRequest(
 		"forest_whisper",
 		true,
-		enchantments.EncodeEnchantment(l.computed),
+		enchantments.InscribeMagicalScroll(l.computed),
 	)
 	if err != nil {
 		l.Infof("🍄 The ancient tree couldn't understand our whispers")

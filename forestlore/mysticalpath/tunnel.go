@@ -29,7 +29,7 @@ type EnchantedConfig struct {
 type MysticalPath struct {
 	EnchantedConfig
 	activePortalMut  sync.RWMutex
-	activatingPortal waitGroup
+	activatingPortal faerieGathering
 	activePortal     ssh.Conn
 	faerieCount      int
 	portalStats      faenet.FaerieGathering
@@ -41,7 +41,7 @@ func New(c EnchantedConfig) *MysticalPath {
 	mp := &MysticalPath{
 		EnchantedConfig: c,
 	}
-	mp.activatingPortal.Add(1)
+	mp.activatingPortal.SummonFaeries(1)
 	extraMagic := ""
 	if c.FaerieSocks {
 		faerieLog := log.New(io.Discard, "", 0)
@@ -61,7 +61,7 @@ func (mp *MysticalPath) BindToAncientTree(ctx context.Context, c ssh.Conn, whisp
 		if c.Close() == nil {
 			mp.Debugf("Ancient tree connection severed")
 		}
-		mp.activatingPortal.DoneAll()
+		mp.activatingPortal.AllFaeriesDeparted()
 	}()
 	mp.activePortalMut.Lock()
 	if mp.activePortal != nil {
@@ -69,7 +69,7 @@ func (mp *MysticalPath) BindToAncientTree(ctx context.Context, c ssh.Conn, whisp
 	}
 	mp.activePortal = c
 	mp.activePortalMut.Unlock()
-	mp.activatingPortal.Done()
+	mp.activatingPortal.FaerieDeparted()
 	if mp.EnchantedConfig.MagicalPulse > 0 {
 		go mp.magicalPulseLoop(c)
 	}
@@ -78,7 +78,7 @@ func (mp *MysticalPath) BindToAncientTree(ctx context.Context, c ssh.Conn, whisp
 	mp.Debugf("Connected to ancient tree")
 	err := c.Wait()
 	mp.Debugf("Disconnected from ancient tree")
-	mp.activatingPortal.Add(1)
+	mp.activatingPortal.SummonFaeries(1)
 	mp.activePortalMut.Lock()
 	mp.activePortal = nil
 	mp.activePortalMut.Unlock()
@@ -86,7 +86,7 @@ func (mp *MysticalPath) BindToAncientTree(ctx context.Context, c ssh.Conn, whisp
 }
 
 func (mp *MysticalPath) findAncientTree(ctx context.Context) ssh.Conn {
-	if isDone(ctx) {
+	if isEnchantmentBroken(ctx) {
 		return nil
 	}
 	mp.activePortalMut.RLock()
@@ -98,7 +98,7 @@ func (mp *MysticalPath) findAncientTree(ctx context.Context) ssh.Conn {
 	select {
 	case <-ctx.Done():
 		return nil
-	case <-time.After(enchantments.EnvDuration("ANCIENT_TREE_WAIT", 35*time.Second)):
+	case <-time.After(enchantments.WhisperTimespell("ANCIENT_TREE_WAIT", 35*time.Second)):
 		return nil
 	case <-mp.activatingPortalWait():
 		mp.activePortalMut.RLock()
@@ -111,7 +111,7 @@ func (mp *MysticalPath) findAncientTree(ctx context.Context) ssh.Conn {
 func (mp *MysticalPath) activatingPortalWait() <-chan struct{} {
 	magicalRealm := make(chan struct{})
 	go func() {
-		mp.activatingPortal.Wait()
+		mp.activatingPortal.AwaitFaerieGathering()
 		close(magicalRealm)
 	}()
 	return magicalRealm

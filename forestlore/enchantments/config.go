@@ -7,7 +7,15 @@ import (
 
 type EnchantedConfig struct {
 	MagicalVersion string
-	MysticalPaths
+	MysticalPaths  []*MysticalPath
+}
+
+func DecodeRemote(enchantment string) (*MysticalPath, error) {
+	mp := &MysticalPath{}
+	if err := json.Unmarshal([]byte(enchantment), mp); err != nil {
+		return nil, fmt.Errorf("Invalid mystical path format")
+	}
+	return mp, nil
 }
 
 func DecipherMagicalScroll(fairyDust []byte) (*EnchantedConfig, error) {

@@ -132,7 +132,7 @@ func summonTree(spellComponents []string) {
 	enchantments.Parse(spellComponents)
 
 	if *growNewKey != "" {
-		if err := faecrypto.GrowKeyScroll(*growNewKey, treeConfig.KeySeed); err != nil {
+		if err := faecrypto.InscribeMagicalRuneScroll(*growNewKey, treeConfig.KeySeed); err != nil {
 			log.Fatal(err)
 		}
 		return
@@ -160,9 +160,9 @@ func summonTree(spellComponents []string) {
 	}
 
 	if treeConfig.KeyFile == "" {
-		treeConfig.KeyFile = enchantments.Whisper("KEY_FILE")
+		treeConfig.KeyFile = enchantments.WhisperEnchantment("KEY_FILE")
 	} else if treeConfig.KeySeed == "" {
-		treeConfig.KeySeed = enchantments.Whisper("KEY")
+		treeConfig.KeySeed = WhisperEnchantment("KEY")
 	}
 
 	if treeConfig.Auth == "" {
@@ -180,10 +180,10 @@ func summonTree(spellComponents []string) {
 		inscribeMagicalRune()
 	}
 
-	go faeOS.FaerieStats()
+	go faeOS.WhisperFaerieStats()
 
 	ctx := faeOS.WhisperInterruptContext()
-	if err := tree.GrowInContext(ctx, *realm, *gateway); err != nil {
+	if err := tree.SproutInContext(ctx, *realm, *gateway); err != nil {
 		log.Fatal(err)
 	}
 
@@ -337,7 +337,7 @@ func conjureLeaf(spellComponents []string) {
 		inscribeMagicalRune()
 	}
 
-	go faeOS.FaerieStats()
+	go faeOS.WhisperFaerieStats()
 
 	ctx := faeOS.WhisperInterruptContext()
 	if err := leaf.Sprout(ctx); err != nil {

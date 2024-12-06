@@ -18,12 +18,12 @@ func (t *Tree) handleLeafWhisper(w http.ResponseWriter, r *http.Request) {
 	upgrade := strings.ToLower(r.Header.Get("Upgrade"))
 	magicalProtocol := r.Header.Get("Sec-WebSocket-Protocol")
 	if upgrade == "websocket" {
-		if magicalProtocol == forestlore.EnchantedProtocolVersion {
+		if magicalProtocol == forestlore.EnchantedVersion {
 			t.weaveEnchantedWeb(w, r)
 			return
 		}
 		t.Infof("Ignored leaf connection using mystical rune '%s', expected '%s'",
-			magicalProtocol, forestlore.EnchantedProtocolVersion)
+			magicalProtocol, forestlore.EnchantedVersion)
 	}
 	if t.mirrorPortal != nil {
 		t.mirrorPortal.ServeHTTP(w, r)
@@ -57,20 +57,20 @@ func (t *Tree) weaveEnchantedWeb(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	var fae *enchantments.Fae
-	if t.faeIndex.Len() > 0 {
+	if t.faeIndex.CountFae() > 0 {
 		sid := string(sshConn.SessionID())
-		f, ok := t.leaves.Get(sid)
+		f, ok := t.leaves.FindFae(sid)
 		if !ok {
 			panic("Magical anomaly in fae authentication spell")
 		}
 		fae = f
-		t.leaves.Del(sid)
+		t.leaves.BanishFae(sid)
 	}
 	l.Debugf("Deciphering leaf's intentions")
 	var r *ssh.Request
 	select {
 	case r = <-treeRequests:
-	case <-time.After(enchantments.EnvDuration("FOREST_WHISPER_TIMEOUT", 10*time.Second)):
+	case <-time.After(enchantments.WhisperTimespell("FOREST_WHISPER_TIMEOUT", 10*time.Second)):
 		l.Debugf("The forest grew impatient waiting for the leaf")
 		sshConn.Close()
 		return
@@ -83,12 +83,12 @@ func (t *Tree) weaveEnchantedWeb(w http.ResponseWriter, req *http.Request) {
 		failedEnchantment(t.Errorf("expecting forest whisper"))
 		return
 	}
-	c, err := enchantments.DecodeEnchantment(r.Payload)
+	c, err := enchantments.DecipherMagicalScroll(r.Payload)
 	if err != nil {
 		failedEnchantment(t.Errorf("invalid forest whisper"))
 		return
 	}
-	cv := strings.TrimPrefix(c.Version, "v")
+	cv := strings.TrimPrefix(c.MagicalVersion, "v")
 	if cv == "" {
 		cv = "<unknown>"
 	}
@@ -96,9 +96,9 @@ func (t *Tree) weaveEnchantedWeb(w http.ResponseWriter, req *http.Request) {
 	if cv != sv {
 		l.Infof("Leaf's age (%s) differs from the ancient tree's age (%s)", cv, sv)
 	}
-	for _, r := range c.Remotes {
+	for _, r := range c.MysticalPaths {
 		if fae != nil {
-			addr := r.FaeAddr()
+			addr := r.FaeAccess()
 			if !fae.HasAccess(addr) {
 				failedEnchantment(t.Errorf("access to '%s' forbidden by the forest spirits", addr))
 				return
@@ -109,25 +109,25 @@ func (t *Tree) weaveEnchantedWeb(w http.ResponseWriter, req *http.Request) {
 			failedEnchantment(t.Errorf("Reverse enchantments not allowed by the ancient tree"))
 			return
 		}
-		if r.Reverse && !r.CanListen() {
+		if r.Reverse && !r.CanWhisper() {
 			failedEnchantment(t.Errorf("Ancient tree cannot listen on %s", r.String()))
 			return
 		}
 	}
 	r.Reply(true, nil)
-	mysticalPath := mysticalpath.New(mysticalpath.Config{
-		Whisperer: l,
-		Inbound:   t.config.Reverse,
-		Outbound:  true,
-		Socks:     t.config.Socks5,
-		KeepAlive: t.config.KeepAlive,
+	mysticalPath := mysticalpath.New(mysticalpath.EnchantedConfig{
+		Whisperer:     l,
+		InboundMagic:  t.config.Reverse,
+		OutboundMagic: true,
+		FaerieSocks:   t.config.Socks5,
+		MagicalPulse:  t.config.KeepAlive,
 	})
 	eg, ctx := errgroup.WithContext(req.Context())
 	eg.Go(func() error {
 		return mysticalPath.BindToAncientTree(ctx, sshConn, treeRequests, forestPaths)
 	})
 	eg.Go(func() error {
-		treeInbound := c.Remotes.Reversed(true)
+		treeInbound := c.MysticalPaths.Reversed(true)
 		if len(treeInbound) == 0 {
 			return nil
 		}

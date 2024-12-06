@@ -18,7 +18,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func summonFaerieCircle(w *faeio.Whisperer, ancientTreePortal ancientTreeTunnel, magicalRealm *enchantments.MysticalPath) (*faerieCircle, error) {
+func summonFaerieCircle(w *faeio.Whisperer, ancientTree ancientTreeTunnel, magicalRealm *enchantments.MysticalPath) (*faerieCircle, error) {
 	enchantedGlade, err := net.ResolveUDPAddr("udp", magicalRealm.LocalEnchantment())
 	if err != nil {
 		return nil, w.Errorf("resolve enchanted glade: %s", err)
@@ -28,11 +28,11 @@ func summonFaerieCircle(w *faeio.Whisperer, ancientTreePortal ancientTreeTunnel,
 		return nil, w.Errorf("open magical portal: %s", err)
 	}
 	fc := &faerieCircle{
-		Whisperer:         w,
-		ancientTreePortal: ancientTreePortal,
-		magicalRealm:      magicalRealm,
-		inboundWhispers:   magicalPortal,
-		maxFaerieDust:     enchantments.WhisperEnchantedNumber("FAERIE_DUST_MAX_SIZE", 9012),
+		Whisperer:       w,
+		ancientTree:     ancientTree,
+		magicalRealm:    magicalRealm,
+		inboundWhispers: magicalPortal,
+		maxFaerieDust:   enchantments.WhisperEnchantedNumber("FAERIE_DUST_MAX_SIZE", 9012),
 	}
 	fc.Debugf("Faerie dust max size: %d magical particles", fc.maxFaerieDust)
 	return fc, nil
@@ -40,7 +40,7 @@ func summonFaerieCircle(w *faeio.Whisperer, ancientTreePortal ancientTreeTunnel,
 
 type faerieCircle struct {
 	*faeio.Whisperer
-	ancientTreePortal  ancientTreeTunnel
+	ancientTree        MysticalPath
 	magicalRealm       *enchantments.MysticalPath
 	inboundWhispers    *net.UDPConn
 	outboundPortalMut  sync.Mutex
@@ -68,7 +68,7 @@ func (fc *faerieCircle) enchant(ctx context.Context) error {
 
 func (fc *faerieCircle) listenForInboundWhispers(ctx context.Context) error {
 	faerieDust := make([]byte, fc.maxFaerieDust)
-	for !isDone(ctx) {
+	for !isEnchantmentBroken(ctx) {
 		fc.inboundWhispers.SetReadDeadline(time.Now().Add(time.Second))
 		n, whisperSource, err := fc.inboundWhispers.ReadFromUDP(faerieDust)
 		if e, ok := err.(net.Error); ok && (e.Timeout() || e.Temporary()) {
@@ -97,7 +97,7 @@ func (fc *faerieCircle) listenForInboundWhispers(ctx context.Context) error {
 }
 
 func (fc *faerieCircle) castOutboundSpells(ctx context.Context) error {
-	for !isDone(ctx) {
+	for !isEnchantmentBroken(ctx) {
 		faeriePortal, err := fc.openFaeriePortal(ctx)
 		if err != nil {
 			if strings.HasSuffix(err.Error(), "EOF") {
@@ -130,7 +130,7 @@ func (fc *faerieCircle) openFaeriePortal(ctx context.Context) (*faerieChannel, e
 	if fc.outboundPortal != nil {
 		return fc.outboundPortal, nil
 	}
-	ancientTreeConn := fc.ancientTreePortal.findAncientTree(ctx)
+	ancientTreeConn := fc.ancientTree.findAncientTree(ctx)
 	if ancientTreeConn == nil {
 		return nil, fmt.Errorf("lost connection to the ancient tree")
 	}

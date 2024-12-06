@@ -55,12 +55,12 @@ type FaerieTLS struct {
 type Leaf struct {
 	*faeio.Whisperer
 	config       *Config
-	computed     enchantments.Config
+	computed     enchantments.EnchantedConfig
 	sshConfig    *ssh.ClientConfig
 	tlsConfig    *tls.Config
 	proxyURL     *url.URL
 	server       string
-	connCount    faenet.ConnCount
+	connCount    faenet.FaerieGathering
 	stop         func()
 	eg           *errgroup.Group
 	mysticalpath *mysticalpath.MysticalPath
@@ -91,8 +91,8 @@ func GrowNewLeaf(c *Config) (*Leaf, error) {
 	leaf := &Leaf{
 		Whisperer: faeio.NewWhisperer("leaf"),
 		config:    c,
-		computed: enchantments.Config{
-			Version: forestlore.EnchantedVersion,
+		computed: enchantments.EnchantedConfig{
+			MagicalVersion: forestlore.EnchantedVersion,
 		},
 		server:    u.String(),
 		tlsConfig: nil,
@@ -141,16 +141,16 @@ func GrowNewLeaf(c *Config) (*Leaf, error) {
 		if r.Reverse {
 			hasReverse = true
 		}
-		if r.Stdio {
+		if r.Whisper {
 			if hasStdio {
 				return nil, errors.New("🍄 Only one mystical stream is allowed")
 			}
 			hasStdio = true
 		}
-		if !r.Reverse && !r.Stdio && !r.CanListen() {
+		if !r.Reverse && !r.Whisper && !r.CanWhisper() {
 			return nil, fmt.Errorf("🍄 Leaf cannot listen on %s", r.String())
 		}
-		leaf.computed.Remotes = append(leaf.computed.Remotes, r)
+		leaf.computed.MysticalPaths = append(leaf.computed.MysticalPaths, r)
 	}
 
 	if p := c.Proxy; p != "" {
@@ -160,26 +160,26 @@ func GrowNewLeaf(c *Config) (*Leaf, error) {
 		}
 	}
 
-	user, pass := enchantments.ParseAuth(c.Auth)
+	user, pass := enchantments.DecipherFaeWhisper(c.Auth)
 	leaf.sshConfig = &ssh.ClientConfig{
 		User:            user,
 		Auth:            []ssh.AuthMethod{ssh.Password(pass)},
-		ClientVersion:   "SSH-" + forestlore.ProtocolVersion + "-leaf",
+		ClientVersion:   "SSH-" + forestlore.EnchantedVersion + "-leaf",
 		HostKeyCallback: leaf.verifyTree,
-		Timeout:         enchantments.EnvDuration("SSH_TIMEOUT", 30*time.Second),
+		Timeout:         enchantments.WhisperTimespell("SSH_TIMEOUT", 30*time.Second),
 	}
 
-	leaf.mysticalpath = mysticalpath.New(mysticalpath.Config{
-		Whisperer: leaf.Whisperer,
-		Inbound:   true,
-		Outbound:  hasReverse,
-		Socks:     hasReverse && hasSocks,
-		KeepAlive: leaf.config.KeepAlive,
+	leaf.mysticalpath = mysticalpath.New(mysticalpath.EnchantedConfig{
+		Whisperer:     leaf.Whisperer,
+		InboundMagic:  true,
+		OutboundMagic: hasReverse,
+		FaerieSocks:   hasReverse && hasSocks,
+		MagicalPulse:  leaf.config.KeepAlive,
 	})
 	return leaf, nil
 }
 
-func (l *Leaf) Sprout() error {
+func (l *Leaf) Sprout(context.Context) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	if err := l.GrowLeaves(ctx); err != nil {
@@ -193,7 +193,7 @@ func (l *Leaf) verifyTree(hostname string, remote net.Addr, key ssh.PublicKey) e
 	if expect == "" {
 		return nil
 	}
-	got := faecrypto.FingerprintKey(key)
+	got := faecrypto.WhisperMagicalRuneEssence(key)
 	_, err := base64.StdEncoding.DecodeString(expect)
 	if _, ok := err.(base64.CorruptInputError); ok {
 		l.Whisperer.Infof("🍄 Specified outdated MD5 rune (%s), please update to the new SHA256 rune: %s", expect, got)
@@ -233,10 +233,10 @@ func (l *Leaf) GrowLeaves(ctx context.Context) error {
 	}
 	l.Infof("🌿 Connecting to %s%s\n", l.server, via)
 	eg.Go(func() error {
-		return l.connectionLoop(ctx)
+		return l.magicalConnectionDance(ctx)
 	})
 	eg.Go(func() error {
-		leafInbound := l.computed.Remotes.Reversed(false)
+		leafInbound := l.computed.MysticalPaths.Reversed(false)
 		if len(leafInbound) == 0 {
 			return nil
 		}

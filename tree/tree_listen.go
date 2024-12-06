@@ -62,10 +62,10 @@ func (t *Tree) summonFaerieSpell(magicalRealms []string) *tls.Config {
 			t.Infof("Accepting the Faerie Queen's terms and fetching a magical seal...")
 			return true
 		},
-		Email:      enchantments.Env("FAERIE_QUEEN_MESSAGE"),
+		Email:      enchantments.WhisperEnchantment("FAERIE_QUEEN_MESSAGE"),
 		HostPolicy: autocert.HostWhitelist(magicalRealms...),
 	}
-	enchantedCache := enchantments.Env("FAERIE_CACHE")
+	enchantedCache := enchantments.WhisperEnchantment("FAERIE_CACHE")
 	if enchantedCache == "" {
 		enchantedHome := os.Getenv("HOME")
 		if enchantedHome == "" {

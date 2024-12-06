@@ -2,118 +2,149 @@ package mysticalpath
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net"
+	"sync"
 
 	"github.com/Er0sSec/Engrave/forestlore/enchantments"
 	"github.com/Er0sSec/Engrave/forestlore/faeio"
-	"github.com/Er0sSec/Engrave/forestlore/faenet"
+	"github.com/jpillora/sizestr"
+	"golang.org/x/crypto/ssh"
 )
+
+type ancientTreeTunnel interface {
+	findAncientTree(ctx context.Context) ssh.Conn
+}
 
 type Faerie struct {
 	*faeio.Whisperer
-	mysticalPath      *MysticalPath
-	enchantedIndex    int
-	magicalRealm      *enchantments.MysticalPath
-	enchantedListener net.Listener
-	faerieStats       faenet.FaerieGathering
+	ancientTree ancientTreeTunnel
+	id          int
+	count       int
+	magicalPath *enchantments.MysticalPath
+	dialer      net.Dialer
+	tcp         *net.TCPListener
+	udp         *faerieCircle
+	mu          sync.Mutex
 }
 
-func SummonFaerie(whisperer *faeio.Whisperer, mp *MysticalPath, index int, realm *enchantments.MysticalPath) (*Faerie, error) {
+func SummonFaerie(whisperer *faeio.Whisperer, ancientTree ancientTreeTunnel, index int, magicalPath *enchantments.MysticalPath) (*Faerie, error) {
+	id := index + 1
 	f := &Faerie{
-		Whisperer:      whisperer.Fork("faerie#%d", index),
-		mysticalPath:   mp,
-		enchantedIndex: index,
-		magicalRealm:   realm,
+		Whisperer:   whisperer.Fork("faerie#%s", magicalPath.String()),
+		ancientTree: ancientTree,
+		id:          id,
+		magicalPath: magicalPath,
 	}
-	return f, nil
+	return f, f.castListeningSpell()
+}
+
+func (f *Faerie) castListeningSpell() error {
+	if f.magicalPath.Whisper {
+		//TODO: check if mystical streams are active?
+	} else if f.magicalPath.LocalSpell == "tcp" {
+		enchantedGlade, err := net.ResolveTCPAddr("tcp", f.magicalPath.LocalGlade+":"+f.magicalPath.LocalPortal)
+		if err != nil {
+			return f.Errorf("resolve enchanted glade: %s", err)
+		}
+		l, err := net.ListenTCP("tcp", enchantedGlade)
+		if err != nil {
+			return f.Errorf("tcp: %s", err)
+		}
+		f.Infof("Casting listening spell")
+		f.tcp = l
+	} else if f.magicalPath.LocalSpell == "udp" {
+		l, err := summonFaerieCircle(
+			f.Whisperer,
+			f.ancientTree,
+			f.magicalPath,
+		)
+		if err != nil {
+			return err
+		}
+		f.Infof("Casting listening spell")
+		f.udp = l
+	} else {
+		return f.Errorf("unknown mystical spell")
+	}
+	return nil
 }
 
 func (f *Faerie) Enchant(ctx context.Context) error {
-	if f.magicalRealm.Whisper {
-		return f.whisperEnchantment(ctx)
+	if f.magicalPath.Whisper {
+		return f.enchantWhisperStream(ctx)
+	} else if f.magicalPath.LocalSpell == "tcp" {
+		return f.enchantTCPStream(ctx)
+	} else if f.magicalPath.LocalSpell == "udp" {
+		return f.udp.enchant(ctx)
 	}
-	l, err := f.castListeningSpell()
-	if err != nil {
-		return err
-	}
-	f.enchantedListener = l
-	f.Infof("Listening on %s", f.magicalRealm.LocalEnchantment())
-	return f.acceptMagicalConnections(ctx)
+	panic("mystical anomaly detected")
 }
 
-func (f *Faerie) castListeningSpell() (net.Listener, error) {
-	network := "tcp"
-	if f.magicalRealm.LocalSpell == "udp" {
-		network = "udp"
-	}
-	l, err := net.Listen(network, f.magicalRealm.LocalEnchantment())
-	if err != nil {
-		return nil, fmt.Errorf("Failed to cast listening spell: %s", err)
-	}
-	return l, nil
-}
-
-func (f *Faerie) acceptMagicalConnections(ctx context.Context) error {
+func (f *Faerie) enchantWhisperStream(ctx context.Context) error {
+	defer f.Infof("Mystical stream closed")
 	for {
-		magicalConn, err := f.enchantedListener.Accept()
+		f.channelMagicalStream(ctx, faeio.MysticalPortal)
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			// the enchantment is not ready yet, keep waiting
+		}
+	}
+}
+
+func (f *Faerie) enchantTCPStream(ctx context.Context) error {
+	magicalSeal := make(chan struct{})
+	go func() {
+		select {
+		case <-ctx.Done():
+			f.tcp.Close()
+		case <-magicalSeal:
+		}
+	}()
+	for {
+		magicalSource, err := f.tcp.Accept()
 		if err != nil {
-			if ctx.Err() == nil {
-				f.Infof("Failed to accept magical connection: %s", err)
+			select {
+			case <-ctx.Done():
+				err = nil
+			default:
+				f.Infof("Accept enchantment failed: %s", err)
 			}
+			close(magicalSeal)
 			return err
 		}
-		go f.handleMagicalConnection(ctx, magicalConn)
+		go f.channelMagicalStream(ctx, magicalSource)
 	}
 }
 
-func (f *Faerie) handleMagicalConnection(ctx context.Context, magicalConn net.Conn) {
-	defer magicalConn.Close()
-	f.Debugf("Magical connection from %s", magicalConn.RemoteAddr())
+func (f *Faerie) channelMagicalStream(ctx context.Context, source io.ReadWriteCloser) {
+	defer source.Close()
 
-	if f.magicalRealm.LocalSpell == "udp" {
-		f.handleUDPEnchantment(ctx, magicalConn.(*net.UDPConn))
+	f.mu.Lock()
+	f.count++
+	enchantmentID := f.count
+	f.mu.Unlock()
+
+	faerieLog := f.Fork("enchantment#%d", enchantmentID)
+	faerieLog.Debugf("Opening mystical channel")
+
+	ancientTreeConn := f.ancientTree.findAncientTree(ctx)
+	if ancientTreeConn == nil {
+		faerieLog.Debugf("Lost connection to the ancient tree")
 		return
 	}
 
-	ancientTree := f.mysticalPath.findAncientTree(ctx)
-	if ancientTree == nil {
-		f.Debugf("Lost connection to the ancient tree")
-		return
-	}
-
-	remoteEnchantment := f.magicalRealm.RemoteEnchantment()
-	f.Debugf("Connecting to %s", remoteEnchantment)
-	remoteConn, err := ancientTree.Dial(f.magicalRealm.RemoteSpell, remoteEnchantment)
+	magicalChannel, whispers, err := ancientTreeConn.OpenChannel("engrave", []byte(f.magicalPath.RemoteEnchantment()))
 	if err != nil {
-		f.Infof("Remote connection failed: %s", err)
+		faerieLog.Infof("Mystical stream error: %s", err)
 		return
 	}
-	defer remoteConn.Close()
+	go ssh.DiscardRequests(whispers)
 
-	f.joinMagicalStreams(magicalConn, remoteConn)
-}
-
-func (f *Faerie) joinMagicalStreams(local, remote io.ReadWriteCloser) {
-	sent, received := faeio.MagicalStream(local, remote)
-	f.Debugf("Closed (sent %s received %s)",
-		enchantments.WhisperEnchantedNumber("BYTES_SENT", int(sent)),
-		enchantments.WhisperEnchantedNumber("BYTES_RCVD", int(received)))
-}
-
-func (f *Faerie) handleUDPEnchantment(ctx context.Context, conn *net.UDPConn) {
-	// UDP enchantment handling logic here
-}
-
-func (f *Faerie) whisperEnchantment(ctx context.Context) error {
-	// Whisper enchantment logic here
-	return nil
-}
-
-func (f *Faerie) Close() error {
-	if f.enchantedListener != nil {
-		return f.enchantedListener.Close()
-	}
-	return nil
+	sentDust, receivedDust := faeio.MagicalStream(source, magicalChannel)
+	faerieLog.Debugf("Closing mystical channel (sent %s received %s)",
+		sizestr.ToString(sentDust),
+		sizestr.ToString(receivedDust))
 }

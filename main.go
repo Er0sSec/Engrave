@@ -12,6 +12,7 @@ import (
 	"time"
 
 	forestlore "github.com/Er0sSec/Engrave/forestlore"
+	"github.com/Er0sSec/Engrave/forestlore/enchantments"
 	"github.com/Er0sSec/Engrave/forestlore/faeOS"
 	"github.com/Er0sSec/Engrave/forestlore/faecrypto"
 	leafwhisper "github.com/Er0sSec/Engrave/leaf"
@@ -101,44 +102,44 @@ var treeEnchantment = `
 ` + commonEnchantment
 
 func summonTree(spellComponents []string) {
-	enchantments := flag.NewFlagSet("tree", flag.ContinueOnError)
-	treeConfig := &treekeeper.Config{}
+	enchantment := flag.NewFlagSet("tree", flag.ContinueOnError)
+	treeConfig := &treekeeper.EnchantedConfig{}
 
-	enchantments.StringVar(&treeConfig.KeySeed, "key", "", "")
-	enchantments.StringVar(&treeConfig.KeyFile, "keyfile", "", "")
-	enchantments.StringVar(&treeConfig.AuthFile, "authfile", "", "")
-	enchantments.StringVar(&treeConfig.Auth, "auth", "", "")
-	enchantments.DurationVar(&treeConfig.KeepAlive, "keepalive", 25*time.Second, "")
-	enchantments.StringVar(&treeConfig.Proxy, "proxy", "", "")
-	enchantments.StringVar(&treeConfig.Proxy, "backend", "", "")
-	enchantments.BoolVar(&treeConfig.Socks5, "socks5", false, "")
-	enchantments.BoolVar(&treeConfig.Reverse, "reverse", false, "")
-	enchantments.StringVar(&treeConfig.TLS.Key, "tls-key", "", "")
-	enchantments.StringVar(&treeConfig.TLS.Cert, "tls-cert", "", "")
-	enchantments.Var(multiFlag{&treeConfig.TLS.Domains}, "tls-domain", "")
-	enchantments.StringVar(&treeConfig.TLS.CA, "tls-ca", "", "")
+	enchantment.StringVar(&treeConfig.AncientSeed, "key", "", "")
+	enchantment.StringVar(&treeConfig.RuneScroll, "keyfile", "", "")
+	enchantment.StringVar(&treeConfig.FaeRegistry, "authfile", "", "")
+	enchantment.StringVar(&treeConfig.FaeWhisper, "auth", "", "")
+	enchantment.DurationVar(&treeConfig.MagicalPulse, "keepalive", 25*time.Second, "")
+	enchantment.StringVar(&treeConfig.MysticalPortal, "proxy", "", "")
+	enchantment.StringVar(&treeConfig.MysticalPortal, "backend", "", "")
+	enchantment.BoolVar(&treeConfig.FaerieSocks, "socks5", false, "")
+	enchantment.BoolVar(&treeConfig.ReverseSpell, "reverse", false, "")
+	enchantment.StringVar(&treeConfig.FaerieTLS.Key, "tls-key", "", "")
+	enchantment.StringVar(&treeConfig.FaerieTLS.Cert, "tls-cert", "", "")
+	enchantment.Var(multiFlag{&treeConfig.FaerieTLS.Domains}, "tls-domain", "")
+	enchantment.StringVar(&treeConfig.FaerieTLS.CA, "tls-ca", "", "")
 
-	realm := enchantments.String("host", "", "")
-	p := enchantments.String("p", "", "")
-	gateway := enchantments.String("port", "", "")
-	inscribeRune := enchantments.Bool("pid", false, "")
-	enhancedSenses := enchantments.Bool("v", false, "")
-	growNewKey := enchantments.String("keygen", "", "")
+	realm := enchantment.String("host", "", "")
+	p := enchantment.String("p", "", "")
+	gateway := enchantment.String("port", "", "")
+	inscribeRune := enchantment.Bool("pid", false, "")
+	enhancedSenses := enchantment.Bool("v", false, "")
+	growNewKey := enchantment.String("keygen", "", "")
 
-	enchantments.Usage = func() {
+	enchantment.Usage = func() {
 		fmt.Print(treeEnchantment)
 		os.Exit(0)
 	}
-	enchantments.Parse(spellComponents)
+	enchantment.Parse(spellComponents)
 
 	if *growNewKey != "" {
-		if err := faecrypto.InscribeMagicalRuneScroll(*growNewKey, treeConfig.KeySeed); err != nil {
+		if err := faecrypto.InscribeMagicalRuneScroll(*growNewKey, treeConfig.AncientSeed); err != nil {
 			log.Fatal(err)
 		}
 		return
 	}
 
-	if treeConfig.KeySeed != "" {
+	if treeConfig.AncientSeed != "" {
 		log.Print("The 'key' enchantment is fading and will vanish in future versions.")
 		log.Print("Please use 'engrave tree --keygen /path/to/scroll', then 'engrave tree --keyfile /path/to/scroll' to specify your tree's sacred scroll")
 	}
@@ -159,14 +160,14 @@ func summonTree(spellComponents []string) {
 		*gateway = "8080"
 	}
 
-	if treeConfig.KeyFile == "" {
-		treeConfig.KeyFile = enchantments.WhisperEnchantment("KEY_FILE")
-	} else if treeConfig.KeySeed == "" {
-		treeConfig.KeySeed = WhisperEnchantment("KEY")
+	if treeConfig.RuneScroll == "" {
+		treeConfig.RuneScroll = enchantments.WhisperEnchantment("KEY_FILE")
+	} else if treeConfig.AncientSeed == "" {
+		treeConfig.AncientSeed = enchantments.WhisperEnchantment("KEY")
 	}
 
-	if treeConfig.Auth == "" {
-		treeConfig.Auth = os.Getenv("AUTH")
+	if treeConfig.FaeWhisper == "" {
+		treeConfig.FaeWhisper = os.Getenv("AUTH")
 	}
 
 	tree, err := treekeeper.PlantNewTree(treeConfig)
@@ -281,19 +282,19 @@ breeze:example.com:22
 
 func conjureLeaf(spellComponents []string) {
 	enchantments := flag.NewFlagSet("leaf", flag.ContinueOnError)
-	leafConfig := leafwhisper.Config{Headers: http.Header{}}
+	leafConfig := leafwhisper.LeafConfig{MagicalSeals: http.Header{}}
 
-	enchantments.StringVar(&leafConfig.Fingerprint, "fingerprint", "", "")
-	enchantments.StringVar(&leafConfig.Auth, "auth", "", "")
-	enchantments.DurationVar(&leafConfig.KeepAlive, "keepalive", 25*time.Second, "")
-	enchantments.IntVar(&leafConfig.MaxRetryCount, "max-retry-count", -1, "")
-	enchantments.DurationVar(&leafConfig.MaxRetryInterval, "max-retry-interval", 0, "")
-	enchantments.StringVar(&leafConfig.Proxy, "proxy", "", "")
-	enchantments.StringVar(&leafConfig.TLS.CA, "tls-ca", "", "")
-	enchantments.BoolVar(&leafConfig.TLS.SkipVerify, "tls-skip-verify", false, "")
-	enchantments.StringVar(&leafConfig.TLS.Cert, "tls-cert", "", "")
-	enchantments.StringVar(&leafConfig.TLS.Key, "tls-key", "", "")
-	enchantments.Var(&headerFlags{leafConfig.Headers}, "header", "")
+	enchantments.StringVar(&leafConfig.MagicalRune, "fingerprint", "", "")
+	enchantments.StringVar(&leafConfig.FaeWhisper, "auth", "", "")
+	enchantments.DurationVar(&leafConfig.MagicalPulse, "keepalive", 25*time.Second, "")
+	enchantments.IntVar(&leafConfig.MaxRevivalCount, "max-retry-count", -1, "")
+	enchantments.DurationVar(&leafConfig.MaxRevivalPause, "max-retry-interval", 0, "")
+	enchantments.StringVar(&leafConfig.MysticalPortal, "proxy", "", "")
+	enchantments.StringVar(&leafConfig.FaerieTLS.CA, "tls-ca", "", "")
+	enchantments.BoolVar(&leafConfig.FaerieTLS.SkipVerify, "tls-skip-verify", false, "")
+	enchantments.StringVar(&leafConfig.FaerieTLS.Cert, "tls-cert", "", "")
+	enchantments.StringVar(&leafConfig.FaerieTLS.Key, "tls-key", "", "")
+	enchantments.Var(&headerFlags{leafConfig.MagicalSeals}, "header", "")
 
 	treeName := enchantments.String("hostname", "", "")
 	magicalName := enchantments.String("sni", "", "")
@@ -311,19 +312,19 @@ func conjureLeaf(spellComponents []string) {
 		log.Fatalf("A tree and at least one pathway are required for the spell")
 	}
 
-	leafConfig.Server = spellComponents[0]
-	leafConfig.Remotes = spellComponents[1:]
+	leafConfig.AncientTree = spellComponents[0]
+	leafConfig.EnchantedPaths = spellComponents[1:]
 
-	if leafConfig.Auth == "" {
-		leafConfig.Auth = os.Getenv("AUTH")
+	if leafConfig.FaeWhisper == "" {
+		leafConfig.FaeWhisper = os.Getenv("AUTH")
 	}
 
 	if *treeName != "" {
-		leafConfig.Headers.Set("Host", *treeName)
-		leafConfig.TLS.ServerName = *treeName
+		leafConfig.MagicalSeals.Set("Host", *treeName)
+		leafConfig.FaerieTLS.ServerName = *treeName
 	}
 	if *magicalName != "" {
-		leafConfig.TLS.ServerName = *magicalName
+		leafConfig.FaerieTLS.ServerName = *magicalName
 	}
 
 	leaf, err := leafwhisper.GrowNewLeaf(&leafConfig)

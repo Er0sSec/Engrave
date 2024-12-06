@@ -18,14 +18,14 @@ import (
 )
 
 func (l *Leaf) magicalConnectionDance(ctx context.Context) error {
-	fairyDust := &backoff.Backoff{Max: l.config.MaxRetryInterval}
+	fairyDust := &backoff.Backoff{Max: l.config.MaxRevivalPause}
 	for {
 		connected, err := l.castConnectionSpell(ctx)
 		if connected {
 			fairyDust.Reset()
 		}
 		attempt := int(fairyDust.Attempt())
-		maxAttempt := l.config.MaxRetryCount
+		maxAttempt := l.config.MaxRevivalCount
 		if strings.HasSuffix(err.Error(), "use of closed network connection") {
 			err = io.EOF
 		}
@@ -69,23 +69,23 @@ func (l *Leaf) castConnectionSpell(ctx context.Context) (connected bool, err err
 	magicalDialer := websocket.Dialer{
 		HandshakeTimeout: enchantments.WhisperTimespell("FOREST_WHISPER_TIMEOUT", 45*time.Second),
 		Subprotocols:     []string{forestlore.EnchantedVersion},
-		TLSClientConfig:  l.tlsConfig,
+		TLSClientConfig:  l.faerieShield,
 		ReadBufferSize:   enchantments.WhisperEnchantedNumber("FOREST_BUFFER_SIZE", 0),
 		WriteBufferSize:  enchantments.WhisperEnchantedNumber("FOREST_BUFFER_SIZE", 0),
-		NetDialContext:   l.config.DialContext,
+		NetDialContext:   l.config.WeaveConnection,
 	}
-	if p := l.proxyURL; p != nil {
+	if p := l.portalURL; p != nil {
 		if err := l.setMysticalPortal(p, &magicalDialer); err != nil {
 			return false, err
 		}
 	}
-	enchantedConn, _, err := magicalDialer.DialContext(ctx, l.server, l.config.Headers)
+	enchantedConn, _, err := magicalDialer.DialContext(ctx, l.ancientTree, l.config.MagicalSeals)
 	if err != nil {
 		return false, err
 	}
 	leafConn := faenet.NewEnchantedWebSocketConn(enchantedConn)
 	l.Debugf("🌿 Whispering to the ancient tree...")
-	sshConn, forestPaths, treeRequests, err := ssh.NewClientConn(leafConn, "", l.sshConfig)
+	sshConn, forestPaths, treeRequests, err := ssh.NewClientConn(leafConn, "", l.enchantedConfig)
 	if err != nil {
 		e := err.Error()
 		if strings.Contains(e, "unable to authenticate") {
@@ -112,7 +112,7 @@ func (l *Leaf) castConnectionSpell(ctx context.Context) (connected bool, err err
 		return false, errors.New(string(configerr))
 	}
 	l.Infof("🌟 Connected to the enchanted forest (Mystical delay: %s)", time.Since(t0))
-	err = l.mysticalpath.BindToAncientTree(ctx, sshConn, treeRequests, forestPaths)
+	err = l.enchantedPath.BindToAncientTree(ctx, sshConn, treeRequests, forestPaths)
 	l.Infof("🍂 Disconnected from the enchanted forest")
 	connected = time.Since(t0) > 5*time.Second
 	return connected, err

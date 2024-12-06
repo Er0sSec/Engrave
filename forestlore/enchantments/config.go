@@ -7,7 +7,7 @@ import (
 
 type EnchantedConfig struct {
 	MagicalVersion string
-	MysticalPaths  []*MysticalPath
+	MysticalPaths  MysticalPaths
 }
 
 func DecodeRemote(enchantment string) (*MysticalPath, error) {

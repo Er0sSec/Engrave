@@ -14,9 +14,11 @@ import (
 // graceful slumbering capabilities
 type EnchantedHTTPServer struct {
 	*http.Server
-	faerieLock  sync.Mutex
-	faerieGroup *errgroup.Group
-	whisperErr  error
+	faerieLock      sync.Mutex
+	faerieGroup     *errgroup.Group
+	whisperErr      error
+	faerieGathering *sync.WaitGroup
+	Wait            func() error
 }
 
 // NewEnchantedHTTPServer summons a new EnchantedHTTPServer

@@ -59,12 +59,12 @@ func (t *Tree) weaveEnchantedWeb(w http.ResponseWriter, req *http.Request) {
 	var fae *enchantments.Fae
 	if t.faeIndex.CountFae() > 0 {
 		sid := string(sshConn.SessionID())
-		f, ok := t.leaves.FindFae(sid)
+		f, ok := t.faeCircle.FindFae(sid)
 		if !ok {
 			panic("Magical anomaly in fae authentication spell")
 		}
 		fae = f
-		t.leaves.BanishFae(sid)
+		t.faeCircle.BanishFae(sid)
 	}
 	l.Debugf("Deciphering leaf's intentions")
 	var r *ssh.Request
@@ -104,7 +104,7 @@ func (t *Tree) weaveEnchantedWeb(w http.ResponseWriter, req *http.Request) {
 				return
 			}
 		}
-		if r.Reverse && !t.config.Reverse {
+		if r.Reverse && !t.config.ReverseSpell {
 			l.Debugf("Denied reverse enchantment request, please enable --reverse")
 			failedEnchantment(t.Errorf("Reverse enchantments not allowed by the ancient tree"))
 			return
@@ -117,10 +117,10 @@ func (t *Tree) weaveEnchantedWeb(w http.ResponseWriter, req *http.Request) {
 	r.Reply(true, nil)
 	mysticalPath := mysticalpath.New(mysticalpath.EnchantedConfig{
 		Whisperer:     l,
-		InboundMagic:  t.config.Reverse,
+		InboundMagic:  t.config.ReverseSpell,
 		OutboundMagic: true,
-		FaerieSocks:   t.config.Socks5,
-		MagicalPulse:  t.config.KeepAlive,
+		FaerieSocks:   t.config.FaerieSocks,
+		MagicalPulse:  t.config.MagicalPulse,
 	})
 	eg, ctx := errgroup.WithContext(req.Context())
 	eg.Go(func() error {

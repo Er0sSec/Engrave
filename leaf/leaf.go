@@ -29,21 +29,20 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type Config struct {
-	Fingerprint      string
-	Auth             string
-	KeepAlive        time.Duration
-	MaxRetryCount    int
-	MaxRetryInterval time.Duration
-	Server           string
-	Proxy            string
-	Remotes          []string
-	Headers          http.Header
-	TLS              FaerieTLS
-	DialContext      func(ctx context.Context, network, addr string) (net.Conn, error)
-	Verbose          bool
+type LeafConfig struct {
+	MagicalRune     string                                                            // was Fingerprint
+	FaeWhisper      string                                                            // was Auth
+	MagicalPulse    time.Duration                                                     // was KeepAlive
+	MaxRevivalCount int                                                               // was MaxRetryCount
+	MaxRevivalPause time.Duration                                                     // was MaxRetryInterval
+	AncientTree     string                                                            // was Server
+	MysticalPortal  string                                                            // was Proxy
+	EnchantedPaths  []string                                                          // was Remotes
+	MagicalSeals    http.Header                                                       // was Headers
+	FaerieTLS       FaerieTLS                                                         // already themed
+	WeaveConnection func(ctx context.Context, network, addr string) (net.Conn, error) // was DialContext
+	EnhancedVision  bool                                                              // was Verbose
 }
-
 type FaerieTLS struct {
 	SkipVerify bool
 	CA         string
@@ -54,26 +53,29 @@ type FaerieTLS struct {
 
 type Leaf struct {
 	*faeio.Whisperer
-	config       *Config
-	computed     enchantments.EnchantedConfig
-	sshConfig    *ssh.ClientConfig
-	tlsConfig    *tls.Config
-	proxyURL     *url.URL
-	server       string
-	connCount    faenet.FaerieGathering
-	stop         func()
-	eg           *errgroup.Group
-	mysticalpath *mysticalpath.MysticalPath
+	config   *LeafConfig
+	computed struct {
+		MagicalVersion string
+		MysticalPaths  enchantments.MysticalPaths // This should be a slice type that has Reversed method
+	}
+	enchantedConfig *ssh.ClientConfig          // was sshConfig
+	faerieShield    *tls.Config                // was tlsConfig
+	portalURL       *url.URL                   // was proxyURL
+	ancientTree     string                     // was server
+	faerieCount     faenet.FaerieGathering     // already themed
+	wither          func()                     // was stop
+	faerieGroup     *errgroup.Group            // was eg
+	enchantedPath   *mysticalpath.MysticalPath // already themed
 }
 
-func GrowNewLeaf(c *Config) (*Leaf, error) {
-	if !strings.HasPrefix(c.Server, "http") {
-		c.Server = "http://" + c.Server
+func GrowNewLeaf(c *LeafConfig) (*Leaf, error) {
+	if !strings.HasPrefix(c.AncientTree, "http") {
+		c.AncientTree = "http://" + c.AncientTree
 	}
-	if c.MaxRetryInterval < time.Second {
-		c.MaxRetryInterval = 5 * time.Minute
+	if c.MaxRevivalPause < time.Second {
+		c.MaxRevivalPause = 5 * time.Minute
 	}
-	u, err := url.Parse(c.Server)
+	u, err := url.Parse(c.AncientTree)
 	if err != nil {
 		return nil, err
 	}
@@ -88,49 +90,43 @@ func GrowNewLeaf(c *Config) (*Leaf, error) {
 	hasReverse := false
 	hasSocks := false
 	hasStdio := false
-	leaf := &Leaf{
-		Whisperer: faeio.NewWhisperer("leaf"),
-		config:    c,
-		computed: enchantments.EnchantedConfig{
-			MagicalVersion: forestlore.EnchantedVersion,
-		},
-		server:    u.String(),
-		tlsConfig: nil,
-	}
+	leaf := &Leaf{Whisperer: faeio.NewWhisperer("leaf"), config: c, computed: enchantments.EnchantedConfig{
+		MagicalVersion: forestlore.EnchantedVersion,
+	}, ancientTree: u.String(), faerieShield: nil}
 	leaf.Whisperer.Info = true
 
 	if u.Scheme == "wss" {
 		tc := &tls.Config{}
-		if c.TLS.ServerName != "" {
-			tc.ServerName = c.TLS.ServerName
+		if c.FaerieTLS.ServerName != "" {
+			tc.ServerName = c.FaerieTLS.ServerName
 		}
-		if c.TLS.SkipVerify {
+		if c.FaerieTLS.SkipVerify {
 			leaf.Infof("🧚 TLS verification disabled")
 			tc.InsecureSkipVerify = true
-		} else if c.TLS.CA != "" {
+		} else if c.FaerieTLS.CA != "" {
 			rootCAs := x509.NewCertPool()
-			if b, err := os.ReadFile(c.TLS.CA); err != nil {
-				return nil, fmt.Errorf("🍄 Failed to load magical scroll: %s", c.TLS.CA)
+			if b, err := os.ReadFile(c.FaerieTLS.CA); err != nil {
+				return nil, fmt.Errorf("🍄 Failed to load magical scroll: %s", c.FaerieTLS.CA)
 			} else if ok := rootCAs.AppendCertsFromPEM(b); !ok {
-				return nil, fmt.Errorf("🍄 Failed to decode magical runes: %s", c.TLS.CA)
+				return nil, fmt.Errorf("🍄 Failed to decode magical runes: %s", c.FaerieTLS.CA)
 			} else {
-				leaf.Infof("🧚 TLS verification using magical scroll %s", c.TLS.CA)
+				leaf.Infof("🧚 TLS verification using magical scroll %s", c.FaerieTLS.CA)
 				tc.RootCAs = rootCAs
 			}
 		}
-		if c.TLS.Cert != "" && c.TLS.Key != "" {
-			c, err := tls.LoadX509KeyPair(c.TLS.Cert, c.TLS.Key)
+		if c.FaerieTLS.Cert != "" && c.FaerieTLS.Key != "" {
+			c, err := tls.LoadX509KeyPair(c.FaerieTLS.Cert, c.FaerieTLS.Key)
 			if err != nil {
 				return nil, fmt.Errorf("🍄 Error loading leaf's magical runes: %v", err)
 			}
 			tc.Certificates = []tls.Certificate{c}
-		} else if c.TLS.Cert != "" || c.TLS.Key != "" {
+		} else if c.FaerieTLS.Cert != "" || c.FaerieTLS.Key != "" {
 			return nil, fmt.Errorf("🍄 Please provide BOTH magical runes for the leaf")
 		}
-		leaf.tlsConfig = tc
+		leaf.faerieShield = tc
 	}
 
-	for _, s := range c.Remotes {
+	for _, s := range c.EnchantedPaths {
 		r, err := enchantments.DecodeRemote(s)
 		if err != nil {
 			return nil, fmt.Errorf("🍄 Failed to decode mystical pathway '%s': %s", s, err)
@@ -151,17 +147,18 @@ func GrowNewLeaf(c *Config) (*Leaf, error) {
 			return nil, fmt.Errorf("🍄 Leaf cannot listen on %s", r.String())
 		}
 		leaf.computed.MysticalPaths = append(leaf.computed.MysticalPaths, r)
+
 	}
 
-	if p := c.Proxy; p != "" {
-		leaf.proxyURL, err = url.Parse(p)
+	if p := c.MysticalPortal; p != "" {
+		leaf.portalURL, err = url.Parse(p)
 		if err != nil {
 			return nil, fmt.Errorf("🍄 Invalid mystical portal URL (%s)", err)
 		}
 	}
 
-	user, pass := enchantments.DecipherFaeWhisper(c.Auth)
-	leaf.sshConfig = &ssh.ClientConfig{
+	user, pass := enchantments.DecipherFaeWhisper(c.FaeWhisper)
+	leaf.enchantedConfig = &ssh.ClientConfig{
 		User:            user,
 		Auth:            []ssh.AuthMethod{ssh.Password(pass)},
 		ClientVersion:   "SSH-" + forestlore.EnchantedVersion + "-leaf",
@@ -169,12 +166,12 @@ func GrowNewLeaf(c *Config) (*Leaf, error) {
 		Timeout:         enchantments.WhisperTimespell("SSH_TIMEOUT", 30*time.Second),
 	}
 
-	leaf.mysticalpath = mysticalpath.New(mysticalpath.EnchantedConfig{
+	leaf.enchantedPath = mysticalpath.New(mysticalpath.EnchantedConfig{
 		Whisperer:     leaf.Whisperer,
 		InboundMagic:  true,
 		OutboundMagic: hasReverse,
 		FaerieSocks:   hasReverse && hasSocks,
-		MagicalPulse:  leaf.config.KeepAlive,
+		MagicalPulse:  leaf.config.MagicalPulse,
 	})
 	return leaf, nil
 }
@@ -189,7 +186,7 @@ func (l *Leaf) Sprout(context.Context) error {
 }
 
 func (l *Leaf) verifyTree(hostname string, remote net.Addr, key ssh.PublicKey) error {
-	expect := l.config.Fingerprint
+	expect := l.config.MagicalRune
 	if expect == "" {
 		return nil
 	}
@@ -215,7 +212,7 @@ func (l *Leaf) verifyAncientRune(key ssh.PublicKey) error {
 		strbytes[i] = fmt.Sprintf("%02x", b)
 	}
 	got := strings.Join(strbytes, ":")
-	expect := l.config.Fingerprint
+	expect := l.config.MagicalRune
 	if !strings.HasPrefix(got, expect) {
 		return fmt.Errorf("🍄 Invalid magical rune (%s)", got)
 	}
@@ -224,14 +221,14 @@ func (l *Leaf) verifyAncientRune(key ssh.PublicKey) error {
 
 func (l *Leaf) GrowLeaves(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
-	l.stop = cancel
+	l.wither = cancel
 	eg, ctx := errgroup.WithContext(ctx)
-	l.eg = eg
+	l.faerieGroup = eg
 	via := ""
-	if l.proxyURL != nil {
-		via = " via " + l.proxyURL.String()
+	if l.portalURL != nil {
+		via = " via " + l.portalURL.String()
 	}
-	l.Infof("🌿 Connecting to %s%s\n", l.server, via)
+	l.Infof("🌿 Connecting to %s%s\n", l.ancientTree, via)
 	eg.Go(func() error {
 		return l.magicalConnectionDance(ctx)
 	})
@@ -240,7 +237,7 @@ func (l *Leaf) GrowLeaves(ctx context.Context) error {
 		if len(leafInbound) == 0 {
 			return nil
 		}
-		return l.mysticalpath.BindRemotes(ctx, leafInbound)
+		return l.enchantedPath.BindRemotes(ctx, leafInbound)
 	})
 	return nil
 }
@@ -275,12 +272,12 @@ func (l *Leaf) setMysticalPortal(u *url.URL, d *websocket.Dialer) error {
 }
 
 func (l *Leaf) AwaitDormancy() error {
-	return l.eg.Wait()
+	return l.faerieGroup.Wait()
 }
 
 func (l *Leaf) Wither() error {
-	if l.stop != nil {
-		l.stop()
+	if l.wither != nil {
+		l.wither()
 	}
 	return nil
 }

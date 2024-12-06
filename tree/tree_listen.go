@@ -21,18 +21,18 @@ type FaerieTLS struct {
 }
 
 func (t *Tree) listenForWhispers(glade, portal string) (net.Listener, error) {
-	hasMagicalRealms := len(t.config.TLS.Domains) > 0
-	hasEnchantedRunes := t.config.TLS.Key != "" && t.config.TLS.Cert != ""
+	hasMagicalRealms := len(t.config.FaerieTLS.Domains) > 0
+	hasEnchantedRunes := t.config.FaerieTLS.Key != "" && t.config.FaerieTLS.Cert != ""
 	if hasMagicalRealms && hasEnchantedRunes {
 		return nil, errors.New("cannot use enchanted runes and magical realms simultaneously")
 	}
 	var faerieSpell *tls.Config
 	if hasMagicalRealms {
-		faerieSpell = t.summonFaerieSpell(t.config.TLS.Domains)
+		faerieSpell = t.summonFaerieSpell(t.config.FaerieTLS.Domains)
 	}
 	magicalWarning := ""
 	if hasEnchantedRunes {
-		c, err := t.castEnchantedRuneSpell(t.config.TLS.Key, t.config.TLS.Cert, t.config.TLS.CA)
+		c, err := t.castEnchantedRuneSpell(t.config.FaerieTLS.Key, t.config.FaerieTLS.Cert, t.config.FaerieTLS.CA)
 		if err != nil {
 			return nil, err
 		}

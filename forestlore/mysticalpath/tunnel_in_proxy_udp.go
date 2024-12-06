@@ -28,11 +28,11 @@ func summonFaerieCircle(w *faeio.Whisperer, ancientTree ancientTreeTunnel, magic
 		return nil, w.Errorf("open magical portal: %s", err)
 	}
 	fc := &faerieCircle{
-		Whisperer:       w,
-		ancientTree:     ancientTree,
-		magicalRealm:    magicalRealm,
-		inboundWhispers: magicalPortal,
-		maxFaerieDust:   enchantments.WhisperEnchantedNumber("FAERIE_DUST_MAX_SIZE", 9012),
+		Whisperer:         w,
+		ancientTreeTunnel: ancientTree, // Match the field name
+		magicalRealm:      magicalRealm,
+		inboundWhispers:   magicalPortal,
+		maxFaerieDust:     enchantments.WhisperEnchantedNumber("FAERIE_DUST_MAX_SIZE", 9012),
 	}
 	fc.Debugf("Faerie dust max size: %d magical particles", fc.maxFaerieDust)
 	return fc, nil
@@ -40,7 +40,7 @@ func summonFaerieCircle(w *faeio.Whisperer, ancientTree ancientTreeTunnel, magic
 
 type faerieCircle struct {
 	*faeio.Whisperer
-	ancientTree        MysticalPath
+	ancientTreeTunnel  ancientTreeTunnel // Change the field name and type
 	magicalRealm       *enchantments.MysticalPath
 	inboundWhispers    *net.UDPConn
 	outboundPortalMut  sync.Mutex
@@ -130,7 +130,7 @@ func (fc *faerieCircle) openFaeriePortal(ctx context.Context) (*faerieChannel, e
 	if fc.outboundPortal != nil {
 		return fc.outboundPortal, nil
 	}
-	ancientTreeConn := fc.ancientTree.findAncientTree(ctx)
+	ancientTreeConn := fc.ancientTreeTunnel.findAncientTree(ctx) // Use the correct field name
 	if ancientTreeConn == nil {
 		return nil, fmt.Errorf("lost connection to the ancient tree")
 	}

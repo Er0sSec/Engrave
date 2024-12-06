@@ -21,26 +21,26 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-type Config struct {
-	KeySeed   string
-	KeyFile   string
-	AuthFile  string
-	Auth      string
-	Proxy     string
-	Socks5    bool
-	Reverse   bool
-	KeepAlive time.Duration
-	TLS       FaerieTLS
+type EnchantedConfig struct {
+	AncientSeed    string
+	RuneScroll     string
+	FaeRegistry    string
+	FaeWhisper     string
+	MysticalPortal string
+	FaerieSocks    bool
+	ReverseSpell   bool
+	MagicalPulse   time.Duration
+	FaerieTLS      FaerieTLS
 }
 
 type Tree struct {
 	*faeio.Whisperer
-	config         *Config
+	config         *EnchantedConfig
 	magicalRune    string
 	enchantedHttp  *faenet.EnchantedHTTPServer
 	mirrorPortal   *httputil.ReverseProxy
 	leafCount      int32
-	leaves         *enchantments.FaeGathering
+	faeCircle      *enchantments.FaeGathering // Changed from leaves
 	sshEnchantment *ssh.ServerConfig
 	faeIndex       *enchantments.FaeIndex
 }
@@ -51,23 +51,23 @@ var magicalUpgrader = websocket.Upgrader{
 	WriteBufferSize: enchantments.WhisperEnchantedNumber("FOREST_BUFFER_SIZE", 0),
 }
 
-func PlantNewTree(c *Config) (*Tree, error) {
+func PlantNewTree(c *EnchantedConfig) (*Tree, error) {
 	tree := &Tree{
 		config:        c,
 		enchantedHttp: faenet.NewEnchantedHTTPServer(),
 		Whisperer:     faeio.NewWhisperer("ancient-tree"),
-		leaves:        enchantments.SummonFaeGathering(),
+		faeCircle:     enchantments.SummonFaeGathering(),
 	}
 	tree.Info = true
 	tree.faeIndex = enchantments.SummonFaeIndex(tree.Whisperer)
-	if c.AuthFile != "" {
-		if err := tree.faeIndex.InvokeFaeFromScroll(c.AuthFile); err != nil {
+	if c.FaeRegistry != "" {
+		if err := tree.faeIndex.InvokeFaeFromScroll(c.FaeRegistry); err != nil {
 			return nil, err
 		}
 	}
-	if c.Auth != "" {
+	if c.FaeWhisper != "" {
 		fae := &enchantments.Fae{EnchantedGlades: []*regexp.Regexp{enchantments.FaeAllowAll}}
-		fae.TrueName, fae.SecretRune = enchantments.DecipherFaeWhisper(c.Auth)
+		fae.TrueName, fae.SecretRune = enchantments.DecipherFaeWhisper(c.FaeWhisper)
 		if fae.TrueName != "" {
 			tree.faeIndex.EmbraceFae(fae)
 		}
@@ -75,15 +75,15 @@ func PlantNewTree(c *Config) (*Tree, error) {
 
 	var magicalRunes []byte
 	var err error
-	if c.KeyFile != "" {
+	if c.RuneScroll != "" {
 		var key []byte
 
-		if faecrypto.IsEngraveRune([]byte(c.KeyFile)) {
-			key = []byte(c.KeyFile)
+		if faecrypto.IsEngraveRune([]byte(c.RuneScroll)) {
+			key = []byte(c.RuneScroll)
 		} else {
-			key, err = os.ReadFile(c.KeyFile)
+			key, err = os.ReadFile(c.RuneScroll)
 			if err != nil {
-				log.Fatalf("Failed to read magical scroll %s", c.KeyFile)
+				log.Fatalf("Failed to read magical scroll %s", c.RuneScroll)
 			}
 		}
 
@@ -95,7 +95,7 @@ func PlantNewTree(c *Config) (*Tree, error) {
 			}
 		}
 	} else {
-		magicalRunes, err = faecrypto.Seed2EnchantedPEM(c.KeySeed)
+		magicalRunes, err = faecrypto.Seed2EnchantedPEM(c.AncientSeed)
 		if err != nil {
 			log.Fatal("Failed to grow magical runes")
 		}
@@ -111,8 +111,8 @@ func PlantNewTree(c *Config) (*Tree, error) {
 		PasswordCallback: tree.authenticateFae,
 	}
 	tree.sshEnchantment.AddHostKey(ancientKey)
-	if c.Proxy != "" {
-		u, err := url.Parse(c.Proxy)
+	if c.MysticalPortal != "" {
+		u, err := url.Parse(c.MysticalPortal)
 		if err != nil {
 			return nil, err
 		}
@@ -126,7 +126,7 @@ func PlantNewTree(c *Config) (*Tree, error) {
 			r.Host = u.Host
 		}
 	}
-	if c.Reverse {
+	if c.ReverseSpell {
 		tree.Infof("Reverse enchantments enabled")
 	}
 	return tree, nil
@@ -186,7 +186,7 @@ func (t *Tree) authenticateFae(c ssh.ConnMetadata, password []byte) (*ssh.Permis
 		t.Debugf("Fae authentication failed for: %s", n)
 		return nil, errors.New("Invalid enchantment for fae: %s")
 	}
-	t.leaves.WelcomeFae(string(c.SessionID()), fae)
+	t.faeCircle.WelcomeFae(string(c.SessionID()), fae)
 	return nil, nil
 }
 

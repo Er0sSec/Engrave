@@ -17,12 +17,35 @@ type MysticalPath struct {
 
 const reverseRune = "R:"
 
+func (mps MysticalPaths) Reversed(reverse bool) MysticalPaths {
+	enchantedSubset := MysticalPaths{}
+	for _, path := range mps {
+		if path.Reverse == reverse {
+			enchantedSubset = append(enchantedSubset, path)
+		}
+	}
+	return enchantedSubset
+}
+
 func DecodeMysticalPath(enchantment string) (*MysticalPath, error) {
 	reversed := false
 	if strings.HasPrefix(enchantment, reverseRune) {
 		enchantment = strings.TrimPrefix(enchantment, reverseRune)
 		reversed = true
 	}
+
+	// Special case for socks
+	if enchantment == "socks" {
+		return &MysticalPath{
+			Reverse:     reversed,
+			LocalGlade:  "127.0.0.1",
+			LocalPortal: "1080",
+			LocalSpell:  "tcp",
+			RemoteSpell: "tcp",
+			Socks:       true,
+		}, nil
+	}
+
 	magicalParts := regexp.MustCompile(`(\[[^\[\]]+\]|[^\[\]:]+):?`).FindAllStringSubmatch(enchantment, -1)
 	if len(magicalParts) <= 0 || len(magicalParts) >= 5 {
 		return nil, errors.New("Invalid mystical path")
@@ -200,16 +223,6 @@ func (mp MysticalPath) CanWhisper() bool {
 }
 
 type MysticalPaths []*MysticalPath
-
-func (mps MysticalPaths) Reversed(reverse bool) MysticalPaths {
-	enchantedSubset := MysticalPaths{}
-	for _, mp := range mps {
-		if mp.Reverse == reverse {
-			enchantedSubset = append(enchantedSubset, mp)
-		}
-	}
-	return enchantedSubset
-}
 
 func (mps MysticalPaths) Encode() []string {
 	enchantedStrings := make([]string, len(mps))
